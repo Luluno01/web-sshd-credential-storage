@@ -1,0 +1,46 @@
+{
+  "name": "web-sshd-credential-storage",
+  "version": "1.0.0",
+  "description": "Credential storage for Luluno01/web-sshd",
+  "main": "build/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "set NODE_ENV=development && nodemon --watch 'src/**/*' -e ts,tsx --exec ts-node ./src/server.ts",
+    "build": "tsc",
+    "serve": "set NODE_ENV=production && node ./build/server.js",
+    "sync": "node build/scripts/sync.js",
+    "add": "node build/scripts/add.js",
+    "delete": "node build/scripts/delete.js",
+    "update": "node build/scripts/update.js",
+    "list": "node build/scripts/list.js",
+    "rename": "node build/scripts/rename.js"
+  },
+  "keywords": [
+    "webssh",
+    "web-ssh",
+    "credential"
+  ],
+  "author": "Untitled",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bluebird": "^3.5.29",
+    "@types/koa": "^2.0.51",
+    "@types/koa-router": "^7.0.42",
+    "@types/node": "^12.12.6",
+    "@types/validator": "^12.0.1",
+    "@types/yargs": "^13.0.3",
+    "nodemon": "^2.0.1",
+    "ts-node": "^8.4.1",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "koa": "^2.11.0",
+    "koa-log4": "^2.3.2",
+    "koa-router": "^7.4.0",
+    "pg": "^7.14.0",
+    "pg-hstore": "^2.3.3",
+    "sequelize": "^5.21.3",
+    "sqlite3": "^4.1.1",
+    "yargs": "^15.0.2"
+  }
+}

@@ -7,6 +7,6 @@ export default class Home extends SimpleController {
   method: Method = 'get'
   pattern: string = '/'
   async handler(ctx: Context) {
-    ctx.body = 'Hello World!'
+    ctx.body = 'Web SSHD Credential Storage'
   }
 }

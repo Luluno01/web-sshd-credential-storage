@@ -21,7 +21,6 @@ const log4js: Log4js & {
 import installMiddlewares from './middlewares'
 /* Controller */
 import installControllers from './controllers'
-import { HttpError } from 'http-errors'
 
 
 /* Initialize logger */
@@ -64,7 +63,4 @@ app.listen(port, () => {
   logger.info(`Server running on port ${port}`)
 })
 
-app.on('error', err => {
-  if(!(err instanceof HttpError)) logger.error('Server error:', err)
-  else if((err.status || err.statusCode).toString().startsWith('5')) logger.error('Server error:', err)
-})
+app.on('error', err => logger.error('Server error:', err))

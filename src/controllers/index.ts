@@ -3,10 +3,12 @@ import SimpleController from './SimpleController'
 import RouterController from './RouterController'
 import * as Router from 'koa-router'
 import Home from './Home'
+import Credential from './Credential'
 
 
 export const controllers: Controller[] = [
-  new Home
+  new Home,
+  new Credential
 ]
 
 export function installControllers(router: Router) {
