@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "set NODE_ENV=development && nodemon --watch 'src/**/*' -e ts,tsx --exec ts-node ./src/server.ts",
     "build": "tsc",
+    "install": "tsc",
     "serve": "set NODE_ENV=production && node ./build/server.js",
     "sync": "node build/scripts/sync.js",
     "add": "node build/scripts/add.js",
