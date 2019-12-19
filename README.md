@@ -19,9 +19,7 @@ cd web-sshd-credential-storage
 npm install
 ```
 
-### Run Server
-
-#### Database
+### Database
 
 Before you run this server, you need to set up the database. The recommended database is SQLite. If you are using SQLite, the database file will be created if it does not exist; for other database such as PostgreSQL, you will need to install the corresponding database server and create database manually. Also, the database driver(s) for Sequelize (see [Sequelize installation documentation](https://sequelize.org/master/manual/getting-started.html#installing)) need to be installed in case of database server other than SQLite or PostgreSQL being used.
 
@@ -39,7 +37,13 @@ export DB_URL="postgres://myUser:myPassword@localhost:5432/websshd"
 
 Note that the `DB_URL` environment variable is required for all database-related operations (most of the following scripts).
 
-#### CLI Script
+### Run Server
+
+```bash
+npm run serve
+```
+
+### CLI Script
 
 There are some CLI scripts can be used to manage the database, including
 
