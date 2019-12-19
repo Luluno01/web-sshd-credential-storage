@@ -43,6 +43,25 @@ Note that the `DB_URL` environment variable is required for all database-related
 npm run serve
 ```
 
+**Warning: do not expose this server directly because it does not provide authentication utility by itself.** You **MUST** set up a reverse-proxy before this server, and guard the APIs by Basic Auth (and thus SSL **MUST** be enabled).
+
+I personally recommend you to use [Caddy](https://caddyserver.com/). Here is an example of `Caddyfile` for reverse proxy:
+
+```
+ssh.example.com {
+    gzip
+    root /www/ssh.example.com
+    cors / https://cloush.example.com
+    basicauth / yourUsername yourPassword
+    header / Access-Control-Allow-Headers Authorization
+    proxy / http://127.0.0.1:3000 {
+        transparent
+    }
+}
+```
+
+Note the `cors` and `header` directives, they are compulsory if your want to access the APIs from other domain(s).
+
 ### CLI Script
 
 There are some CLI scripts can be used to manage the database, including
