@@ -25,6 +25,8 @@ export async function cors(ctx: Context, next: () => Promise<any>) {
       err.headers = err.headers || {}
       err.headers['Access-Control-Allow-Credentials'] = true
       err.headers['Access-Control-Allow-Origin'] = origin
+      err.headers['Access-Control-Allow-Headers'] = '*'
+      err.headers['Access-Control-Allow-Methods'] = '*'
     } 
     throw err
   } 
@@ -33,6 +35,7 @@ export async function cors(ctx: Context, next: () => Promise<any>) {
     ctx.set('Access-Control-Allow-Credentials', 'true')
     ctx.set('Access-Control-Allow-Origin', origin)
     ctx.set('Access-Control-Allow-Headers', '*')
+    ctx.set('Access-Control-Allow-Methods', '*')
     if(ctx.method.toLowerCase() == 'options') {
       ctx.body = ctx.body || ''
     }
