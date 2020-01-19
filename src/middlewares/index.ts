@@ -7,12 +7,13 @@ import { MiddlewareModule } from '../global'
 
 
 export const middlewareModules: MiddlewareModule[] = [
-  cors,
   bodyParser,
   responseTime
 ]
 
 export default function installMiddlewares(app: Koa, router: Router) {
+  cors.init(app, router)
+  app.use(cors.default)
   for(const mod of middlewareModules) {
     if('init' in mod) mod.init(app, router)
     if('default' in mod) router.use(mod.default)

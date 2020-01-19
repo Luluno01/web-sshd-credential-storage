@@ -32,6 +32,10 @@ export async function cors(ctx: Context, next: () => Promise<any>) {
     (ctx.logger as Logger).info(`Cross-origin request from origin ${origin}`)
     ctx.set('Access-Control-Allow-Credentials', 'true')
     ctx.set('Access-Control-Allow-Origin', origin)
+    ctx.set('Access-Control-Allow-Headers', '*')
+    if(ctx.method.toLowerCase() == 'options') {
+      ctx.body = ctx.body || ''
+    }
   }
 }
 
