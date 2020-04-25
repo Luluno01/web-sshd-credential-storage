@@ -38,7 +38,15 @@ async function main() {
     console.log('No matching group')
     return
   }
-  console.table(credentials.map(credential => credential.toJSON()))
+  console.table(credentials.map(credential => {
+    return {
+      id: credential.id,
+      name: credential.name,
+      group: credential.group,
+      createdAt: credential.createdAt,
+      updatedAt: credential.updatedAt
+    }
+  }), [ 'id', 'name', 'group', 'createdAt', 'updatedAt' ])
   const answer = await readline(`Are you sure you want to rename group ${old} to ${newName} for the above credential(s)? `)
   if(isYes(answer)) {
     for(const credential of credentials) {

@@ -1,7 +1,8 @@
-import Credential from '../models/Credential'
+import Credential, { CredentialData } from '../models/Credential'
 import * as yargs from 'yargs'
 import { readFile as _readFile } from 'fs'
 import { promisify } from 'util'
+import { readline } from './helpers/readline'
 const readFile = promisify(_readFile)
 
 
@@ -55,7 +56,7 @@ async function main() {
   }
   if(file) {
     console.log('Input file:', file)
-    const credentials: Credential[] = JSON.parse((await readFile(file)).toString())
+    const credentials: CredentialData[] = JSON.parse((await readFile(file)).toString())
     if(!(credentials instanceof Array)) {
       console.error('Invalid input file')
       console.error(`Valid example:
@@ -77,17 +78,34 @@ async function main() {
 ]`)
       process.exit(1)
     }
-    const created = await Credential.bulkCreate(credentials)
+    const cipherKey = await readline('Encryption password: ')
+    if (!cipherKey) {
+      console.log('Password for encryption is required to add a new credential')
+      process.exit(1)
+    }
+    const created = await Credential.bulkCreateEncrypted(credentials, cipherKey)
     console.log(created.length, 'credential(s) added')
-    if(created.length) console.table(created.map(credential => credential.toJSON()))
+    if(created.length) console.table(created.map(credential => {
+      return {
+        id: credential.id,
+        name: credential.name,
+        group: credential.group,
+        createdAt: credential.createdAt
+      }
+    }))
   } else if(name && uri && username && password) {
-    await Credential.create({
+    const cipherKey = await readline('Encryption password: ')
+    if (!cipherKey) {
+      console.log('Password for encryption is required to add a new credential')
+      process.exit(1)
+    }
+    await Credential.createEncrypted({
       name,
       uri,
       username,
       password,
       group: (group && typeof group == 'string') ? group : null
-    })
+    }, cipherKey)
     console.log('Credential created')
   } else {
     yargs.showHelp()

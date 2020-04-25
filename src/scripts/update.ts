@@ -1,4 +1,4 @@
-import Credential from '../models/Credential'
+import Credential, { CredentialData } from '../models/Credential'
 import * as yargs from 'yargs'
 import { readline, isYes } from './helpers/readline'
 
@@ -52,36 +52,51 @@ async function main() {
     process.exit(0)
   }
   if(id) {
+    const cipherKey = await readline('Encryption password: ')
+    if (!cipherKey) {
+      console.log('Password for decryption is required to make an update')
+      process.exit(1)
+    }
     const credential = await Credential.findByPk(id)
     if(!credential) {
       console.log('Credential not found')
       return
     }
-    const oldInfo: Partial<Credential> = { id: credential.id }
-    const updateInfo: Partial<Credential> = { id: credential.id }
+    let credentialData: CredentialData
+    try {
+      credentialData = (await credential.getDecryptedData(cipherKey)) as CredentialData
+    } catch (err) {
+      console.log('Failed to decrypt credential, please check your password')
+      process.exit(1)
+    }
+    credentialData.name = credential.name
+    credentialData.group = credential.group
+    const oldInfo: Partial<CredentialData & { id: number }> = { id: credential.id }
+    const updateInfo: Partial<CredentialData & { id: number }> = { id: credential.id }
     if(typeof uri == 'string') {
       updateInfo.uri = uri
-      oldInfo.uri = credential.uri
+      oldInfo.uri = credentialData.uri
     }
     if(typeof name == 'string') {
-      oldInfo.name = credential.name
-      credential.name = updateInfo.name = name
+      oldInfo.name = credentialData.name
+      credentialData.name = updateInfo.name = name
     }
     if(typeof username == 'string') {
-      oldInfo.username = credential.username
-      credential.username = updateInfo.username = username
+      oldInfo.username = credentialData.username
+      credentialData.username = updateInfo.username = username
     }
     if(typeof password == 'string') {
-      oldInfo.password = credential.password
-      credential.password = updateInfo.password = password
+      oldInfo.password = credentialData.password
+      credentialData.password = updateInfo.password = password
     }
     if(typeof group == 'string') {
-      oldInfo.group = credential.group
-      credential.group = updateInfo.group = group || null
+      oldInfo.group = credentialData.group
+      credentialData.group = updateInfo.group = group || null
     }
     console.table({ old: oldInfo, new: updateInfo })
-    const answer = await readline('Is the infomation above correct? ')
+    const answer = await readline('Is the information above correct? ')
     if(isYes(answer)) {
+      await credential.setDataEncrypted(credentialData, cipherKey)
       await credential.save()
       console.log('Credential updated')
     } else {
