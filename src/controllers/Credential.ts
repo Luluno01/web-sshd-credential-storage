@@ -10,7 +10,7 @@ const router = new Router
 function getKeyOrThrow(ctx: Context) {
   const password = ctx.get('X-KEY')
   ctx.assert(password, 400, 'Missing X-KEY header')
-  return password
+  return Buffer.from(password, 'base64')
 }
 
 /**
@@ -26,11 +26,17 @@ router.get('/', async ctx => {
   const password = getKeyOrThrow(ctx)
   const options: FindOptions = {}
   if(group !== undefined) options.where = { group }
-  ctx.body = Promise.all((await Cred.findAll(options)).map(async credential => {
+  ctx.body = await Promise.all((await Cred.findAll(options)).map(async credential => {
     try {
       return await credential.toDecryptedJSON(password, ctx.query['with-secret'])
     } catch (err) {
-      return { id: credential.id }
+      return {
+        id: credential.id,
+        name: credential.name,
+        group: credential.group,
+        createdAt: credential.createdAt,
+        updatedAt: credential.updatedAt
+      }
     }
   }))
 })

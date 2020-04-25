@@ -66,7 +66,7 @@ export default class Credential extends Model {
     return JSON.parse(decipher.update(this.data).toString()) as Omit<CredentialData, 'name' | 'group'>
   }
 
-  protected static async getEncryptedData({ name, uri, username, password, group }: CredentialData, cipherKey: string) {
+  protected static async getEncryptedData({ name, uri, username, password, group }: CredentialData, cipherKey: string | Buffer) {
     const salt = randomBytes(16)
     const iv = randomBytes(16)
     const key = await pbkdf2(cipherKey, salt, 100000, 32 /* 256 / 8 = 32 */, 'sha512')
@@ -80,18 +80,18 @@ export default class Credential extends Model {
     }
   }
 
-  public static async createEncrypted(credential: CredentialData, password: string, options?: CreateOptions & { returning: boolean }) {
+  public static async createEncrypted(credential: CredentialData, password: string | Buffer, options?: CreateOptions & { returning: boolean }) {
     return await Credential.create(await Credential.getEncryptedData(credential, password), options)
   }
 
-  public static async bulkCreateEncrypted(credentials: CredentialData[], password: string, options?: BulkCreateOptions) {
+  public static async bulkCreateEncrypted(credentials: CredentialData[], password: string | Buffer, options?: BulkCreateOptions) {
     return await Credential.bulkCreate(
       await Promise.all(credentials.map(credential => Credential.getEncryptedData(credential, password))),
       options
     )
   }
 
-  public async setDataEncrypted(credential: CredentialData, password: string) {
+  public async setDataEncrypted(credential: CredentialData, password: string | Buffer) {
     const { name, salt, iv, data, group } = await Credential.getEncryptedData(credential, password)
     this.name = name
     this.salt = salt
