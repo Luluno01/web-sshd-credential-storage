@@ -1,9 +1,11 @@
 import Credential from '../models/Credential'
 import * as yargs from 'yargs'
 import { readline, isYes } from './helpers/readline'
+import sequelize from '../models/db'
 
 
 async function main() {
+  process.once('beforeExit', () => sequelize.close())
   const { old: _old, new: _newName, help } = yargs
     .option('old', {
       alias: 'o',

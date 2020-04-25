@@ -1,6 +1,7 @@
 import RouterController from './RouterController'
 import * as Router from 'koa-router'
 import Cred, { CredentialData } from '../models/Credential'
+import { Op } from 'sequelize'
 import { FindOptions } from 'sequelize/types'
 import { Context } from 'koa'
 
@@ -24,21 +25,16 @@ router.get('/', async ctx => {
     ctx.throw(400, 'Group name must be either `null` or wrapped by quotes')
   }
   const password = getKeyOrThrow(ctx)
-  const options: FindOptions = {}
-  if(group !== undefined) options.where = { group }
-  ctx.body = await Promise.all((await Cred.findAll(options)).map(async credential => {
+  ctx.assert(await Cred.sentinelVerify(password), 403, 'Invalid password')
+  const options: FindOptions = { where: { id: { [Op.ne]: 1 } } }
+  if(group !== undefined) options.where['group'] = group
+  ctx.body = (await Promise.all((await Cred.findAll(options)).map(async credential => {
     try {
       return await credential.toDecryptedJSON(password, ctx.query['with-secret'])
     } catch (err) {
-      return {
-        id: credential.id,
-        name: credential.name,
-        group: credential.group,
-        createdAt: credential.createdAt,
-        updatedAt: credential.updatedAt
-      }
+      return null
     }
-  }))
+  }))).filter(json => !!json)
 })
 
 /**
@@ -46,12 +42,14 @@ router.get('/', async ctx => {
  */
 router.get('/:id(\\d+)', async ctx => {
   const password = getKeyOrThrow(ctx)
+  ctx.assert(await Cred.sentinelVerify(password), 403, 'Invalid password')
+  ctx.assert(parseInt(ctx.params.id) != 1, 404, 'Credential not found')
   const credential = await Cred.findByPk(ctx.params.id)
   ctx.assert(credential, 404, 'Credential not found')
   try {
     ctx.body = await credential.toDecryptedJSON(password, ctx.query['with-secret'])
   } catch (err) {
-    ctx.body = { id: credential.id }
+    ctx.throw(403, 'Invalid password')
   }
 })
 
@@ -60,6 +58,7 @@ router.get('/:id(\\d+)', async ctx => {
  */
 router.post('/', async ctx => {
   const cipherKey = getKeyOrThrow(ctx)
+  ctx.assert(await Cred.sentinelVerify(cipherKey), 403, 'Invalid password')
   const { request: { body } } = ctx as any
   ctx.assert('name' in body && 'uri' in body && 'username' in body && 'password' in body, 400, 'Invalid request body')
   const { name, uri, username, password } = body
@@ -81,9 +80,11 @@ router.post('/', async ctx => {
  */
 router.delete('/', async ctx => {
   const password = getKeyOrThrow(ctx)
+  ctx.assert(await Cred.sentinelVerify(password), 403, 'Invalid password')
   const { request: { body } } = ctx as any
   ctx.assert(body instanceof Array && body.every(elem => typeof elem == 'number'), 400, 'Invalid request body')
   const res = await Promise.all((body as number[]).map(async id => {
+    if (id == 1) return null
     const credential = await Cred.findByPk(id)
     if (credential) {
       try {
@@ -104,12 +105,14 @@ router.delete('/', async ctx => {
  */
 router.delete('/:id(\\d+)', async ctx => {
   const password = getKeyOrThrow(ctx)
+  ctx.assert(await Cred.sentinelVerify(password), 403, 'Invalid password')
+  ctx.assert(parseInt(ctx.params.id) != 1, 404, 'Credential not found')
   const credential = await Cred.findByPk(ctx.params.id)
   ctx.assert(credential, 404, 'Credential not found')
   try {
     ctx.body = await credential.toDecryptedJSON(password, ctx.query['with-secret'])
   } catch (err) {
-    ctx.throw(403, 'Password does not match')
+    ctx.throw(403, 'Invalid password')
   }
   await credential.destroy()
 })
@@ -119,6 +122,7 @@ router.delete('/:id(\\d+)', async ctx => {
  */
 router.put('/:id(\\d+)', async ctx => {
   const cipherKey = getKeyOrThrow(ctx)
+  ctx.assert(await Cred.sentinelVerify(cipherKey), 403, 'Invalid password')
   const { request: { body } } = ctx as any
   ctx.assert('name' in body || 'uri' in body || 'username' in body || 'password' in body || 'group' in body, 400, 'Invalid request body')
   const { name, uri, username, password } = body
@@ -126,6 +130,7 @@ router.put('/:id(\\d+)', async ctx => {
   ctx.assert(name || uri || username || password || typeof group == 'string' || group === null, 400, 'At least one of name, URI, user name, password and group should be provided and none empty')
   if(typeof group == 'string') group = group || null
   else group = null
+  ctx.assert(parseInt(ctx.params.id) != 1, 404, 'Credential not found')
   const credential = await Cred.findByPk(ctx.params.id)
   ctx.assert(credential, 404, 'Credential not found')
   let data: CredentialData & { id?: number }

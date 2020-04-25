@@ -1,10 +1,13 @@
 import Credential from '../models/Credential'
 import * as yargs from 'yargs'
 import { FindOptions } from 'sequelize/types'
+import { Op } from 'sequelize'
 import { readline } from './helpers/readline'
+import sequelize from '../models/db'
 
 
 async function main() {
+  process.once('beforeExit', () => sequelize.close())
   const { 'with-secret': withSecret, group, help } = yargs
     .option('with-secret', {
       alias: 'w',
@@ -28,9 +31,9 @@ async function main() {
     yargs.showHelp()
     process.exit(0)
   }
-  const options: FindOptions = {}
+  const options: FindOptions = { where: { id: { [Op.ne]: 1 } } }
   if (typeof group == 'string') {
-    options.where = { group: group || null }
+    options.where['group'] = group
   }
   const fails: (Pick<Credential, 'id' | 'name' | 'group'> & { createdAt: Date, updatedAt: Date })[] = []
   const _credentials = await Credential.findAll(options)

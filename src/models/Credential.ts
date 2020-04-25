@@ -66,12 +66,13 @@ export default class Credential extends Model {
     return JSON.parse(decipher.update(this.data).toString()) as Omit<CredentialData, 'name' | 'group'>
   }
 
-  protected static async getEncryptedData({ name, uri, username, password, group }: CredentialData, cipherKey: string | Buffer) {
+  protected static async getEncryptedData({ id, name, uri, username, password, group }: CredentialData & { id?: number }, cipherKey: string | Buffer) {
     const salt = randomBytes(16)
     const iv = randomBytes(16)
     const key = await pbkdf2(cipherKey, salt, 100000, 32 /* 256 / 8 = 32 */, 'sha512')
     const cipher = createCipheriv('aes-256-gcm', key, iv)
     return {
+      ...(id ? { id } : {}),
       name,
       salt,
       iv,
@@ -80,7 +81,7 @@ export default class Credential extends Model {
     }
   }
 
-  public static async createEncrypted(credential: CredentialData, password: string | Buffer, options?: CreateOptions & { returning: boolean }) {
+  public static async createEncrypted(credential: CredentialData & { id?: number }, password: string | Buffer, options?: CreateOptions & { returning: boolean }) {
     return await Credential.create(await Credential.getEncryptedData(credential, password), options)
   }
 
@@ -113,6 +114,17 @@ export default class Credential extends Model {
       delete data.username
       delete data.password
       return data
+    }
+  }
+
+  public static async sentinelVerify(password: string | Buffer) {
+    const dummy = await Credential.findByPk(1)
+    if (!dummy) throw new Error('Dummy credential not found')
+    try {
+      await dummy.getDecryptedData(password)
+      return true
+    } catch (err) {
+      return false
     }
   }
 }

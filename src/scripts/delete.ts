@@ -1,9 +1,11 @@
 import Credential, { CredentialData } from '../models/Credential'
 import * as yargs from 'yargs'
 import { readline, isYes } from './helpers/readline'
+import sequelize from '../models/db'
 
 
 async function main() {
+  process.once('beforeExit', () => sequelize.close())
   const { id, group, force, help } = yargs
     .option('id', {
       alias: 'i',
@@ -45,10 +47,19 @@ async function main() {
   const credentials: { credential: Credential, data: CredentialData & { id: number, createdAt: Date, updatedAt: Date } }[] = []
   let candidates: Credential[]
   if (id) {
+    if (id.includes('1')) {
+      console.warn('Sentinel credential cannot be deleted')
+      id.splice(id.indexOf('1'), 1)
+    }
     candidates = (await Promise.all(id.map(_id => Credential.findByPk(_id))))
     id.forEach((_id, index) => {
       if(!candidates[index]) console.warn('Credential with ID', _id, 'not found')
     })
+    candidates = candidates.filter(credential => !!credential)
+    if (candidates.length == 0) {
+      console.log('No credentials can be delete')
+      return
+    }
   } else if(typeof group == 'string') {
     candidates = await Credential.findAll({ where: { group: group || null } })
     if (!candidates.length) {
@@ -69,18 +80,14 @@ async function main() {
   }
   if (cipherKey) {
     for (const credential of candidates) {
-      if (credential) {
-        try {
-          credentials.push({ credential, data: await credential.toDecryptedJSON(cipherKey, true) })
-        } catch (err) {
-          fails.push(credential)
-        }
+      try {
+        credentials.push({ credential, data: await credential.toDecryptedJSON(cipherKey, true) })
+      } catch (err) {
+        fails.push(credential)
       }
     }
   } else if (force) {
-    for (const credential of candidates) {
-      if (credential) fails.push(credential)  // No password provided, hence failed
-    }
+    fails.splice(0, 0, ...candidates)  // No password provided, hence failed
   } else throw new Error('Password is falsy, however, `force` is not enabled')
   const toBeDeleted: Credential[] = []
   if (fails.length) {

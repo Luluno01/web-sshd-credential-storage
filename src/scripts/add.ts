@@ -3,10 +3,12 @@ import * as yargs from 'yargs'
 import { readFile as _readFile } from 'fs'
 import { promisify } from 'util'
 import { readline } from './helpers/readline'
+import sequelize from '../models/db'
 const readFile = promisify(_readFile)
 
 
 async function main() {
+  process.once('beforeExit', () => sequelize.close())
   const { file, uri, name, username, password, group, help } = yargs
     .option('file', {
       alias: 'f',
@@ -80,7 +82,11 @@ async function main() {
     }
     const cipherKey = await readline('Encryption password: ')
     if (!cipherKey) {
-      console.log('Password for encryption is required to add a new credential')
+      console.log('Password for encryption is required to add new credentials')
+      process.exit(1)
+    }
+    if (!(await Credential.sentinelVerify(cipherKey))) {
+      console.log('Password does not match password of sentinel credential')
       process.exit(1)
     }
     const created = await Credential.bulkCreateEncrypted(credentials, cipherKey)
@@ -97,6 +103,10 @@ async function main() {
     const cipherKey = await readline('Encryption password: ')
     if (!cipherKey) {
       console.log('Password for encryption is required to add a new credential')
+      process.exit(1)
+    }
+    if (!(await Credential.sentinelVerify(cipherKey))) {
+      console.log('Password does not match password of sentinel credential')
       process.exit(1)
     }
     await Credential.createEncrypted({

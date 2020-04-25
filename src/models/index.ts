@@ -21,7 +21,6 @@ export async function sync() {
       throw err
     }
   }
-  sequelize.close()
 }
 
 export const sequelize = _sequelize
