@@ -29,6 +29,7 @@ router.get('/', async ctx => {
   const options: FindOptions = { where: { id: { [Op.ne]: 1 } } }
   if(group !== undefined) options.where['group'] = group
   ctx.body = (await Promise.all((await Cred.findAll(options)).map(async credential => {
+    if (credential.id == 1) return null
     try {
       return await credential.toDecryptedJSON(password, ctx.query['with-secret'])
     } catch (err) {
